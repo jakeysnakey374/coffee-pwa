@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>The Coffee Lab</title>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#0d0703"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Coffee Lab"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: #0d0703; color: #f0e6d3; font-family: "Playfair Display", serif; }
+    body { padding-bottom: env(safe-area-inset-bottom); }
+    input[type=number] { -moz-appearance: textfield; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    #app {
+      min-height: 100vh;
+      background: #0d0703;
+      background-image: radial-gradient(ellipse at 20% 20%, #2a1205 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 80%, #1a0a02 0%, transparent 60%);
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center; padding: 36px 20px 24px;
+      border-bottom: 1px solid #2a1508; margin-bottom: 24px;
+      background: linear-gradient(180deg, #1a0c04 0%, transparent 100%);
+    }
+    .eyebrow { font-size: 11px; letter-spacing: 6px; color: #7a6040; margin-bottom: 8px; font-family: "Space Mono", monospace; }
+    h1 {
+      font-size: clamp(26px, 8vw, 36px); font-weight: 900; letter-spacing: 2px;
+      background: linear-gradient(135deg, #e8c88a, #c8864a, #a05c28);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      line-height: 1.1;
+    }
+    .subhead { font-size: 11px; color: #5a4030; margin-top: 8px; letter-spacing: 2px; font-family: "Space Mono", monospace; }
+
+    /* ── Layout ── */
+    .content { max-width: 480px; margin: 0 auto; padding: 0 12px 40px; }
+
+    /* ── Calculator ── */
+    .calc-card {
+      background: linear-gradient(135deg, #1a0f06 0%, #241508 100%);
+      border: 1px solid #3a2510; border-radius: 16px;
+      padding: 20px 16px; margin-bottom: 20px;
+    }
+    .calc-title { font-size: 11px; letter-spacing: 4px; color: #c8864a; text-transform: uppercase; margin-bottom: 4px; }
+    .calc-hint { font-size: 10px; color: #5a4030; margin-bottom: 14px; font-family: "Space Mono", monospace; }
+
+    .calc-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .calc-col { min-width: 0; }
+
+    .field-label {
+      display: flex; align-items: center; margin-bottom: 5px;
+      font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: #7a6040;
+      white-space: nowrap; overflow: hidden;
+    }
+    .field-label span { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+
+    .auto-btn {
+      background: none; border: none; cursor: pointer; flex-shrink: 0;
+      padding: 0 0 0 4px; font-size: 13px; line-height: 1; transition: opacity 0.2s, color 0.2s;
+    }
+    .auto-btn.is-auto  { color: #c8864a; opacity: 1; cursor: default; }
+    .auto-btn.not-auto { color: #f0e6d3; opacity: 0.35; }
+
+    .calc-input {
+      display: block; width: 100%; border-radius: 8px; outline: none;
+      font-family: "Space Mono", monospace;
+      font-size: clamp(15px, 5vw, 22px);
+      font-weight: 700; text-align: center;
+      padding: 10px 4px; border-width: 1.5px; border-style: solid; transition: all 0.2s;
+    }
+    .calc-input.is-auto  { background: #110a04; border-color: #c8864a66; color: #c8864a; pointer-events: none; }
+    .calc-input.not-auto { background: #1e140a; border-color: #3a2510; color: #f0e6d3; }
+
+    .calc-summary {
+      margin-top: 14px; padding: 10px 14px; background: #110a04; border-radius: 8px;
+      font-family: "Space Mono", monospace; font-size: 12px; color: #a08060; line-height: 1.8;
+    }
+    .hi { color: #c8864a; }
+
+    /* ── Toggle ── */
+    .toggle-wrap {
+      display: flex; background: #1a0f06; border: 1px solid #3a2510;
+      border-radius: 50px; padding: 4px; margin-bottom: 20px; gap: 4px;
+    }
+    .toggle-btn {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 10px 8px; border-radius: 46px; border: none; cursor: pointer;
+      font-family: "Playfair Display", serif; font-size: 13px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      transition: all 0.25s ease; background: none; color: #5a4030;
+    }
+    .toggle-btn img { width: 24px; height: 24px; object-fit: contain; opacity: 0.5; transition: opacity 0.25s; display: inline-block; }
+    .toggle-btn.active-aero   { background: #0e1a2a; color: #4a9eff; box-shadow: 0 0 16px #4a9eff22; }
+    .toggle-btn.active-aero img { opacity: 1; }
+    .toggle-btn.active-french { background: #2a1508; color: #c8864a; box-shadow: 0 0 16px #c8864a22; }
+    .toggle-btn.active-french img { opacity: 1; }
+
+    /* ── Brew panels ── */
+    .brew-panel { display: none; }
+    .brew-panel.visible { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    .section-card { border-radius: 16px; padding: 24px 20px; margin-bottom: 20px; }
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .section-icon { width: 38px; height: 38px; object-fit: contain; display: block; flex-shrink: 0; }
+    .section-title { font-size: 13px; letter-spacing: 4px; text-transform: uppercase; font-weight: 700; }
+    .section-desc { font-size: 12px; color: #7a6040; margin-bottom: 20px; line-height: 1.7; font-family: "Space Mono", monospace; }
+
+    .aeropress-card { background: linear-gradient(160deg, #0e1520 0%, #0a1018 100%); border: 1px solid #4a9eff33; box-shadow: 0 0 30px #4a9eff11; }
+    .french-card    { background: linear-gradient(160deg, #1a0f06 0%, #200e04 100%); border: 1px solid #c8864a33; box-shadow: 0 0 30px #c8864a11; }
+
+    /* ── Timers ── */
+    .timers { display: flex; justify-content: space-around; }
+    .timer-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .timer-label { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #a08060; font-family: "Space Mono", monospace; }
+    .timer-ring { position: relative; width: 130px; height: 130px; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+    .timer-ring svg { transform: rotate(-90deg); }
+    .timer-inner { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .timer-time { font-family: "Space Mono", monospace; font-size: 26px; font-weight: 700; letter-spacing: 1px; }
+    .timer-hint { font-size: 9px; letter-spacing: 2px; color: #7a6040; margin-top: 2px; font-family: "Space Mono", monospace; }
+    .timer-ring.done-pulse { animation: pulse 0.8s ease 3; }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0px transparent; } 50% { box-shadow: 0 0 24px #e05c2a99; } }
+    .reset-all {
+      display: block; width: 100%; margin-top: 14px;
+      background: none; border: 1px solid #3a2510; border-radius: 8px;
+      color: #5a4030; font-family: "Space Mono", monospace; font-size: 10px;
+      letter-spacing: 2px; text-transform: uppercase; padding: 8px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .reset-all:hover { border-color: #c8864a55; color: #a08060; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <div class="header">
+    <div class="eyebrow">&#9749; ARTISAN BREW GUIDE</div>
+    <h1>The Coffee Lab</h1>
+    <div class="subhead">MEASURE &middot; BREW &middot; PERFECT</div>
+  </div>
+
+  <div class="content">
+
+    <!-- Calculator -->
+    <div class="calc-card">
+      <div class="calc-title">&#9878; Brew Calculator</div>
+      <div class="calc-hint">Tap &#8635; on any field to auto-calculate it</div>
+      <div class="calc-grid">
+        <div class="calc-col">
+          <div class="field-label"><span>Coffee&nbsp;(g)</span><button class="auto-btn not-auto" data-field="coffee">&#8635;</button></div>
+          <input class="calc-input not-auto" id="inp-coffee" type="number" min="1" value="15"/>
+        </div>
+        <div class="calc-col">
+          <div class="field-label"><span>Water&nbsp;(ml)</span><button class="auto-btn not-auto" data-field="water">&#8635;</button></div>
+          <input class="calc-input not-auto" id="inp-water" type="number" min="1" value="225"/>
+        </div>
+        <div class="calc-col">
+          <div class="field-label"><span>Ratio&nbsp;1:</span><button class="auto-btn is-auto" data-field="ratio">&#8635;</button></div>
+          <input class="calc-input is-auto" id="inp-ratio" type="number" min="1" step="0.5" value="15" readonly/>
+        </div>
+      </div>
+      <div class="calc-summary">
+        <span class="hi" id="sum-coffee">15g</span> coffee &rarr;
+        <span class="hi" id="sum-water">225ml</span> water at
+        <span class="hi" id="sum-ratio">1:15</span> ratio
+      </div>
+    </div>
+
+    <!-- Toggle -->
+    <div class="toggle-wrap">
+      <button class="toggle-btn active-aero" id="btn-aero" onclick="showPanel('aero')">
+        <img id="ap-toggle-img" src="" alt="Aeropress"/> Aeropress
+      </button>
+      <button class="toggle-btn" id="btn-french" onclick="showPanel('french')">
+        <img id="fp-toggle-img" src="" alt="French Press"/> French Press
+      </button>
+    </div>
+
+    <!-- Aeropress Panel -->
+    <div class="brew-panel visible" id="panel-aero">
+      <div class="section-card aeropress-card">
+        <div class="section-header">
+          <img id="ap-section-img" src="" class="section-icon" alt="Aeropress"/>
+          <div class="section-title" style="color:#4a9eff">Aeropress</div>
+        </div>
+        <div class="section-desc">Add coffee + water, stir, press<br>after 2 minutes for a clean, rich cup.</div>
+        <div class="timers">
+          <div class="timer-wrap">
+            <div class="timer-label">Press Timer &middot; 2 min</div>
+            <div class="timer-ring" data-duration="120" data-color="#4a9eff">
+              <svg width="130" height="130">
+                <circle cx="65" cy="65" r="54" fill="none" stroke="#1a2030" stroke-width="6"/>
+                <circle class="progress-ring" cx="65" cy="65" r="54" fill="none" stroke="#4a9eff" stroke-width="6" stroke-linecap="round"/>
+              </svg>
+              <div class="timer-inner">
+                <div class="timer-time" style="color:#f0e6d3">02:00</div>
+                <div class="timer-hint">TAP TO START</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- French Press Panel -->
+    <div class="brew-panel" id="panel-french">
+      <div class="section-card french-card">
+        <div class="section-header">
+          <img id="fp-section-img" src="" class="section-icon" alt="French Press"/>
+          <div class="section-title" style="color:#c8864a">French Press</div>
+        </div>
+        <div class="section-desc">Let steep for 4 min then stir<br>Then let steep for 8 min for a bold, full-bodied cup.</div>
+        <div class="timers">
+          <div class="timer-wrap">
+            <div class="timer-label">4 min &middot; Stir</div>
+            <div class="timer-ring" data-duration="240" data-color="#c8864a">
+              <svg width="130" height="130">
+                <circle cx="65" cy="65" r="54" fill="none" stroke="#2a1f14" stroke-width="6"/>
+                <circle class="progress-ring" cx="65" cy="65" r="54" fill="none" stroke="#c8864a" stroke-width="6" stroke-linecap="round"/>
+              </svg>
+              <div class="timer-inner">
+                <div class="timer-time" style="color:#f0e6d3">04:00</div>
+                <div class="timer-hint">TAP TO START</div>
+              </div>
+            </div>
+          </div>
+          <div class="timer-wrap">
+            <div class="timer-label">8 min &middot; Enjoy</div>
+            <div class="timer-ring" data-duration="480" data-color="#e05c2a">
+              <svg width="130" height="130">
+                <circle cx="65" cy="65" r="54" fill="none" stroke="#2a1f14" stroke-width="6"/>
+                <circle class="progress-ring" cx="65" cy="65" r="54" fill="none" stroke="#e05c2a" stroke-width="6" stroke-linecap="round"/>
+              </svg>
+              <div class="timer-inner">
+                <div class="timer-time" style="color:#f0e6d3">08:00</div>
+                <div class="timer-hint">TAP TO START</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="reset-all" onclick="resetAllTimers()">&#8635; Reset All Timers</button>
+
+  </div>
+</div>
+<script>
+// ── Images (set via JS to guarantee src is set after DOM ready) ──
+var AP_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAACcElEQVR4nO3dMU7CUACA4afhAJ7AcATixGLizOREDJMjkyMxJE4mDIxOjC4Sw+TEBVyYDCcwxBN4ABPdjBGB1rS07/3/N6kUeOn784S2SgiSJEmSWA6qHkBeneHks+ox7DIf9aPZr4dVD0DVMgA4A4AzADgDgDMAOAOAMwC4aA5YFKE3nmU+iDQddBH7xhUAzgDgDADOAOAMAM4A4AwAzgDgDADOAOAMAM4A4Gp/wmM4WxR2FfBq9ZZ522bzuKinDaNuu7b72RUAzgDgDADOAOAMAK5R9QD+66l/mvs+reuHUh//fPKc+z5VcwWAMwA4A4AzADgDgDMAOAOAMwA4A4AzADgDgDMAOAOAMwA4A4AzALhoLwg5urjNfZ/V6rXUx4+RKwCcAcAZAJwBwBkAnAHAGQBctMcB3h9vqh7CujP/MESRMQA4A4AzADgDgDMAOAOAMwA4A4AzADgDgDMAOAOAMwA4A4AzADgDgDMAOAOAMwA4A4AzALhoLwuP8X/z15ErAJwBwNXuAw1741lhHxRZV9NBtzb73RUAzgDgon0XsM1y+fL9dat1srftYpTcCvBzsv76vqztYpVUAPua7JQiSCoA5WcAcEkFsOkF2u+fF71dzJIKIITyJzulyQ8h0beBWSep6O1ilNwKoHwMAM4A4JJ8DbDL1cf9xtvuGpd7G0cd1Oa05D4tRp2Np5zbwzlqn/grAM4A4AwAzgDgDADOAOAMAM4A4AwAzgDgDADOAOAMAA4XwLYzgVluTw0qgKyTS4oAFYDWGQCcAcAZABwqgKzX+5GuC0QFEMLuySVNfgjAAELYPMm0yZckSRLUF3u/a1XiV8OPAAAAAElFTkSuQmCC";
+var FP_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAACZElEQVR4nO3bsUojURSA4XGx9hmm3MIH8AEsttxqsbQSCSJWQYJstQRJJSJBrCzFQiwtLCwtLbawzDPkBdxmt7CYwJpznXvy/18nwuQy+T0J471NI0mSJIllre8FfMRgMHrrew1dptNxqnv6pe8FqF8GAGcAcAYAZwBwBgBnAHAGAJfqoUWU09PLzgdJx8f7qHviBIAzADgDgDMAOAOAMwA4A4AzALiqH3qc3TxUu/Pnfx3tfKvyXjsB4AwAzgDgDADOAOCq+mZ6//z67lv/bDbraSXx2rZ99/P3ra9V3HsnAJwBwBkAnAHAGQDcet8LWKRt22awvRl+3cOTi87fnf86CH+96ePv8GtGcQLAGQCcAcAZAJwBwBkAnAHAGQCcAcAZAJwBwBkAnAFUbnJ1+za5ui12QMYAkigVggEkEx2BASQUGYEBJBUVgQHAGUBiEVPAACo33PtR9ASRASS37BQwgARKTgEDgKv6XMA/u4fj0OvN5/NPe63r81Ho9aI5AZJY9DGwzPcAA4CrPoB2I8WnVKfa1199ACrLAOAMAK7uD6i/nq5/9r2EleUEgDMAOAOAMwA4A0hi0ePeZf5baABwBgBnAAl4Mkidlt0tZACVK/nX3zQGkFrEXkEDgDOApKJ2ChtAQpHbxA0gmegzAin2A6jc4RADqJxnA1WUAcAZAJwBwBkAnAHAGQCcAcAZAJwBwBkAnAHAGQCcAcAZAFz1+wGGdy99L2GlOQHgiu42WWQ0uSx64CGj8XD/098PJwCcAcAZAJwBwBkAnAHAGQCcAcAZgCRJkiRJkiRJkiRJ0or5A+eoWzbIeT3fAAAAAElFTkSuQmCC";
+document.getElementById('ap-toggle-img').src  = AP_SRC;
+document.getElementById('fp-toggle-img').src  = FP_SRC;
+document.getElementById('ap-section-img').src = AP_SRC;
+document.getElementById('fp-section-img').src = FP_SRC;
+
+// ── Toggle ──
+function showPanel(which) {
+  document.getElementById('panel-aero').classList.toggle('visible', which === 'aero');
+  document.getElementById('panel-french').classList.toggle('visible', which === 'french');
+  document.getElementById('btn-aero').className   = 'toggle-btn' + (which === 'aero'   ? ' active-aero'   : '');
+  document.getElementById('btn-french').className = 'toggle-btn' + (which === 'french' ? ' active-french' : '');
+}
+
+// ── Calculator ──
+(function() {
+  var autoField = 'ratio';
+  var fields = ['coffee','water','ratio'];
+  var inputs = {};
+  fields.forEach(function(f){ inputs[f] = document.getElementById('inp-'+f); });
+
+  function val(f){ return parseFloat(inputs[f].value) || 0; }
+
+  function recalc() {
+    var c=val('coffee'), w=val('water'), r=val('ratio');
+    if (autoField==='ratio'  && c>0) inputs.ratio.value  = (w/c).toFixed(2);
+    if (autoField==='water'  && r>0) inputs.water.value  = (c*r).toFixed(1);
+    if (autoField==='coffee' && r>0) inputs.coffee.value = (w/r).toFixed(1);
+    document.getElementById('sum-coffee').textContent = val('coffee')+'g';
+    document.getElementById('sum-water').textContent  = val('water')+'ml';
+    document.getElementById('sum-ratio').textContent  = '1:'+val('ratio');
+  }
+
+  function setAuto(f) {
+    autoField = f;
+    fields.forEach(function(x){
+      var btn = document.querySelector('.auto-btn[data-field="'+x+'"]');
+      var inp = inputs[x];
+      var on = x===f;
+      btn.className = 'auto-btn ' + (on ? 'is-auto' : 'not-auto');
+      inp.className = 'calc-input ' + (on ? 'is-auto' : 'not-auto');
+      inp.readOnly = on;
+    });
+    recalc();
+  }
+
+  fields.forEach(function(f){ inputs[f].addEventListener('input', recalc); });
+  document.querySelectorAll('.auto-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if (btn.dataset.field !== autoField) setAuto(btn.dataset.field);
+    });
+  });
+})();
+
+// ── Wake Lock ──
+var wakeLock = null;
+function acquireWakeLock() {
+  if ('wakeLock' in navigator && wakeLock === null) {
+    navigator.wakeLock.request('screen').then(function(wl){ wakeLock = wl; }).catch(function(){});
+  }
+}
+function releaseWakeLock() {
+  var anyRunning = allTimers.some(function(t){ return t.running; });
+  if (!anyRunning && wakeLock) { wakeLock.release(); wakeLock = null; }
+}
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'visible') acquireWakeLock();
+});
+
+// ── Timers ──
+var allTimers = [];
+function resetAllTimers() {
+  allTimers.forEach(function(t){ t.reset(); });
+}
+(function() {
+  var CIRC = 2 * Math.PI * 54;
+  document.querySelectorAll('.timer-ring').forEach(function(el) {
+    var duration = parseInt(el.dataset.duration);
+    var color    = el.dataset.color;
+    var ring     = el.querySelector('.progress-ring');
+    var timeEl   = el.querySelector('.timer-time');
+    var hintEl   = el.querySelector('.timer-hint');
+    ring.style.strokeDasharray  = CIRC;
+    ring.style.strokeDashoffset = 0;
+    ring.style.transition = 'stroke-dashoffset 0.5s ease';
+    var left=duration, running=false, done=false, iv=null;
+    function fmt(t){ return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'); }
+    function render(){
+      ring.style.strokeDashoffset = CIRC*(1-left/duration);
+      ring.style.stroke = done ? '#e05c2a' : color;
+      timeEl.textContent = done ? 'DONE' : fmt(left);
+      timeEl.style.color = done ? '#e05c2a' : '#f0e6d3';
+      hintEl.textContent = running ? 'TAP TO PAUSE' : (done ? 'TAP TO RESET' : 'TAP TO START');
+    }
+    function reset(){ clearInterval(iv); if(el._buzzIv){ clearInterval(el._buzzIv); el._buzzIv=null; if(navigator.vibrate) navigator.vibrate(0); } left=duration; running=false; done=false; el.classList.remove('done-pulse'); render(); }
+    function onDone(){
+      running=false; done=true;
+      el.classList.remove('done-pulse');
+      void el.offsetWidth;
+      el.classList.add('done-pulse');
+      if (navigator.vibrate) {
+        // Buzz repeatedly until dismissed
+        var buzzIv = setInterval(function(){ navigator.vibrate([300, 200, 300, 200, 300]); }, 1200);
+        el._buzzIv = buzzIv;
+      }
+      releaseWakeLock();
+      render();
+    }
+    el.addEventListener('click', function(){
+      if (navigator.vibrate) navigator.vibrate(10);
+      if(done){ reset(); return; }
+      running=!running;
+      if(running){
+        acquireWakeLock();
+        iv=setInterval(function(){ left--; if(left<=0){left=0;clearInterval(iv);onDone();} else render(); },1000);
+      } else {
+        clearInterval(iv);
+        releaseWakeLock();
+      }
+      render();
+    });
+    render();
+    allTimers.push({ reset: reset, get running(){ return running; } });
+  });
+})();
+
+
+</script>
+</body>
+</html>
