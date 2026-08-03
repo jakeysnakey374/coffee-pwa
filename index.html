@@ -329,6 +329,64 @@ document.addEventListener('visibilitychange', function(){
 
 // ── Timers ──
 var allTimers = [];
+var ALERT_VIBRATION_PATTERN = [800, 250, 800, 250, 1200, 300];
+var ALERT_REPEAT_GAP_MS = 350;
+
+function stopAlert(el) {
+  if (el._alertRepeatTo) {
+    clearTimeout(el._alertRepeatTo);
+    el._alertRepeatTo = null;
+  }
+  if (el._alarmIv) {
+    clearInterval(el._alarmIv);
+    el._alarmIv = null;
+  }
+  if (navigator.vibrate) navigator.vibrate(0);
+}
+
+function startVibrationAlert(el) {
+  if (!navigator.vibrate) return;
+  var patternMs = ALERT_VIBRATION_PATTERN.reduce(function(sum, ms) { return sum + ms; }, 0);
+  var replayMs = patternMs + ALERT_REPEAT_GAP_MS;
+  (function repeat() {
+    navigator.vibrate(ALERT_VIBRATION_PATTERN);
+    el._alertRepeatTo = setTimeout(repeat, replayMs);
+  })();
+}
+
+function playAlarmTick() {
+  var Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return;
+  if (!window._coffeeAudioCtx) {
+    window._coffeeAudioCtx = new Ctx();
+  }
+  var ctx = window._coffeeAudioCtx;
+  if (ctx.state === 'suspended') ctx.resume();
+  var now = ctx.currentTime;
+  var osc = ctx.createOscillator();
+  var gain = ctx.createGain();
+  osc.type = 'square';
+  osc.frequency.value = 980;
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.08, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.24);
+}
+
+function startAudioAlert(el) {
+  playAlarmTick();
+  el._alarmIv = setInterval(playAlarmTick, 900);
+}
+
+function startAlert(el) {
+  stopAlert(el);
+  startVibrationAlert(el);
+  startAudioAlert(el);
+}
+
 function resetAllTimers() {
   allTimers.forEach(function(t){ t.reset(); });
 }
@@ -352,17 +410,14 @@ function resetAllTimers() {
       timeEl.style.color = done ? '#e05c2a' : '#f0e6d3';
       hintEl.textContent = running ? 'TAP TO PAUSE' : (done ? 'TAP TO RESET' : 'TAP TO START');
     }
-    function reset(){ clearInterval(iv); if(el._buzzIv){ clearInterval(el._buzzIv); el._buzzIv=null; if(navigator.vibrate) navigator.vibrate(0); } left=duration; running=false; done=false; el.classList.remove('done-pulse'); render(); }
+    function reset(){ clearInterval(iv); stopAlert(el); left=duration; running=false; done=false; el.classList.remove('done-pulse'); render(); }
     function onDone(){
       running=false; done=true;
       el.classList.remove('done-pulse');
       void el.offsetWidth;
       el.classList.add('done-pulse');
-      if (navigator.vibrate) {
-        // Buzz repeatedly until dismissed
-        var buzzIv = setInterval(function(){ navigator.vibrate([300, 200, 300, 200, 300]); }, 1200);
-        el._buzzIv = buzzIv;
-      }
+      // Keep a strong haptic + audio alert running until the timer is reset.
+      startAlert(el);
       releaseWakeLock();
       render();
     }
