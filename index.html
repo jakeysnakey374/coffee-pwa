@@ -71,6 +71,12 @@
     .auto-btn.is-auto  { color: #c8864a; opacity: 1; cursor: default; }
     .auto-btn.not-auto { color: #f0e6d3; opacity: 0.35; }
 
+    .unit-btn {
+      background: none; border: none; padding: 0; margin: 0; cursor: pointer;
+      font: inherit; color: inherit; text-decoration: underline dotted; text-underline-offset: 2px;
+    }
+    .unit-btn:hover, .unit-btn:active { color: #c8864a; }
+
     .calc-input {
       display: block; width: 100%; border-radius: 8px; outline: none;
       font-family: "Space Mono", monospace;
@@ -161,7 +167,7 @@
           <input class="calc-input not-auto" id="inp-coffee" type="number" min="1" value="15"/>
         </div>
         <div class="calc-col">
-          <div class="field-label"><span>Water&nbsp;(ml)</span><button class="auto-btn not-auto" data-field="water">&#8635;</button></div>
+          <div class="field-label"><span>Water&nbsp;(<button class="unit-btn" id="water-unit-btn" type="button" title="Switch units">ml</button>)</span><button class="auto-btn not-auto" data-field="water">&#8635;</button></div>
           <input class="calc-input not-auto" id="inp-water" type="number" min="1" value="225"/>
         </div>
         <div class="calc-col">
@@ -279,17 +285,38 @@ function showPanel(which) {
   var inputs = {};
   fields.forEach(function(f){ inputs[f] = document.getElementById('inp-'+f); });
 
+  var ML_PER_OZ = 29.5735;
+  var waterUnit = 'ml';
+  var waterUnitBtn = document.getElementById('water-unit-btn');
+
   function val(f){ return parseFloat(inputs[f].value) || 0; }
+  function waterToMl(v){ return waterUnit==='ml' ? v : v*ML_PER_OZ; }
+  function mlToWater(ml){ return waterUnit==='ml' ? ml : ml/ML_PER_OZ; }
 
   function recalc() {
-    var c=val('coffee'), w=val('water'), r=val('ratio');
-    if (autoField==='ratio'  && c>0) inputs.ratio.value  = (w/c).toFixed(2);
-    if (autoField==='water'  && r>0) inputs.water.value  = (c*r).toFixed(1);
-    if (autoField==='coffee' && r>0) inputs.coffee.value = (w/r).toFixed(1);
+    var c=val('coffee'), r=val('ratio');
+    var wMl = waterToMl(val('water'));
+    if (autoField==='ratio'  && c>0) {
+      inputs.ratio.value = (wMl/c).toFixed(2);
+    } else if (autoField==='water'  && r>0) {
+      wMl = c*r;
+      inputs.water.value = mlToWater(wMl).toFixed(waterUnit==='ml' ? 1 : 2);
+    } else if (autoField==='coffee' && r>0) {
+      inputs.coffee.value = (wMl/r).toFixed(1);
+    }
     document.getElementById('sum-coffee').textContent = val('coffee')+'g';
-    document.getElementById('sum-water').textContent  = val('water')+'ml';
+    document.getElementById('sum-water').textContent  = val('water')+waterUnit;
     document.getElementById('sum-ratio').textContent  = '1:'+val('ratio');
   }
+
+  function toggleWaterUnit() {
+    var currentMl = waterToMl(val('water'));
+    waterUnit = waterUnit === 'ml' ? 'oz' : 'ml';
+    waterUnitBtn.textContent = waterUnit;
+    inputs.water.value = mlToWater(currentMl).toFixed(waterUnit==='ml' ? 1 : 2);
+    recalc();
+  }
+  waterUnitBtn.addEventListener('click', function(e){ e.stopPropagation(); toggleWaterUnit(); });
 
   function setAuto(f) {
     autoField = f;
